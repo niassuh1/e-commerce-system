@@ -42,7 +42,7 @@ class Service:
 # ---------------------------------------------------------------------------
 SERVICES: dict[str, Service] = {
     "store": Service(settings="app.settings_store_service", port=8000), # Equivalent to  python manage.py runserver 8000 --settings=app.settings_store_service
-    "user": Service(settings="app.settings_user_service", port=8001),
+    "auth": Service(settings="app.settings_auth_service", port=8001),
 }
 # ---------------------------------------------------------------------------
 

@@ -5,6 +5,6 @@ from .views import get_store, get_all_stores
 
 
 urlpatterns = [
-    path('/all', get_all_stores, name='get_all_store'),
-    path('/info', get_store, name='get_store'),
+    path('all/', get_all_stores, name='get_all_store'),
+    path('info/', get_store, name='get_store'),
 ]

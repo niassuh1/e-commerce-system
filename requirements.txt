@@ -1,4 +1,5 @@
 django
 pika
 djangorestframework
+djangorestframework-simplejwt
 psycopg2
