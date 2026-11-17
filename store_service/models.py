@@ -5,6 +5,7 @@ import uuid
 class Store (models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     name = models.TextField(max_length=255)
+    logo_url = models.URLField(max_length=500, blank=True)
     created_at = models.DateField(auto_now=True)
     owner_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
