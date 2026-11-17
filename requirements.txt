@@ -3,3 +3,5 @@ pika
 djangorestframework
 djangorestframework-simplejwt
 psycopg2
+redis
+django-redis
