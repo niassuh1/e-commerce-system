@@ -56,7 +56,7 @@ def img(path: str) -> str:
     return f"https://cdn.dummyjson.com/product-images/{path}/thumbnail.webp"
 
 
-# products: (name, DummyJSON image path, quantity in stock)
+# products: (name, DummyJSON image path, price, quantity in stock)
 MERCHANTS = {
     "john": {
         "first_name": "John",
@@ -66,25 +66,25 @@ MERCHANTS = {
             "Best Buy": {
                 "logo_url": LOGOS["lightspeed"],
                 "products": [
-                    ("Apple MacBook Pro 14\" Space Grey", "laptops/apple-macbook-pro-14-inch-space-grey", 14),
-                    ("Dell XPS 13 9300 Laptop", "laptops/new-dell-xps-13-9300-laptop", 11),
-                    ("Apple iPad Mini 2021 Starlight", "tablets/ipad-mini-2021-starlight", 25),
-                    ("Samsung Galaxy Tab S8 Plus", "tablets/samsung-galaxy-tab-s8-plus-grey", 16),
-                    ("Apple iPhone 13 Pro", "smartphones/iphone-13-pro", 19),
-                    ("Apple AirPods Max Silver", "mobile-accessories/apple-airpods-max-silver", 22),
-                    ("Beats Flex Wireless Earphones", "mobile-accessories/beats-flex-wireless-earphones", 0),  # out of stock on purpose
+                    ("Apple MacBook Pro 14\" Space Grey", "laptops/apple-macbook-pro-14-inch-space-grey", "1999.00", 14),
+                    ("Dell XPS 13 9300 Laptop", "laptops/new-dell-xps-13-9300-laptop", "1299.99", 11),
+                    ("Apple iPad Mini 2021 Starlight", "tablets/ipad-mini-2021-starlight", "499.00", 25),
+                    ("Samsung Galaxy Tab S8 Plus", "tablets/samsung-galaxy-tab-s8-plus-grey", "899.99", 16),
+                    ("Apple iPhone 13 Pro", "smartphones/iphone-13-pro", "999.00", 19),
+                    ("Apple AirPods Max Silver", "mobile-accessories/apple-airpods-max-silver", "549.00", 22),
+                    ("Beats Flex Wireless Earphones", "mobile-accessories/beats-flex-wireless-earphones", "49.95", 0),  # out of stock on purpose
                 ],
             },
             "Dick's Sporting Goods": {
                 "logo_url": LOGOS["magnolia"],
                 "products": [
-                    ("Spalding Basketball", "sports-accessories/basketball", 60),
-                    ("Official Football", "sports-accessories/football", 45),
-                    ("Tennis Racket", "sports-accessories/tennis-racket", 28),
-                    ("Baseball Glove", "sports-accessories/baseball-glove", 33),
-                    ("Metal Baseball Bat", "sports-accessories/metal-baseball-bat", 21),
-                    ("Volleyball", "sports-accessories/volleyball", 40),
-                    ("Golf Balls", "sports-accessories/golf-ball", 150),
+                    ("Spalding Basketball", "sports-accessories/basketball", "29.99", 60),
+                    ("Official Football", "sports-accessories/football", "34.99", 45),
+                    ("Tennis Racket", "sports-accessories/tennis-racket", "89.00", 28),
+                    ("Baseball Glove", "sports-accessories/baseball-glove", "59.99", 33),
+                    ("Metal Baseball Bat", "sports-accessories/metal-baseball-bat", "74.50", 21),
+                    ("Volleyball", "sports-accessories/volleyball", "24.99", 40),
+                    ("Golf Balls", "sports-accessories/golf-ball", "19.99", 150),
                 ],
             },
         },
@@ -97,24 +97,24 @@ MERCHANTS = {
             "Whole Foods Market": {
                 "logo_url": LOGOS["layers"],
                 "products": [
-                    ("Organic Whole Milk", "groceries/milk", 80),
-                    ("Free-Range Eggs", "groceries/eggs", 120),
-                    ("Fresh Fish Steak", "groceries/fish-steak", 25),
-                    ("Organic Honey Jar", "groceries/honey-jar", 70),
-                    ("Strawberries", "groceries/strawberry", 90),
-                    ("Nescafe Coffee", "groceries/nescafe-coffee", 55),
-                    ("Fresh Juice", "groceries/juice", 100),
+                    ("Organic Whole Milk", "groceries/milk", "4.99", 80),
+                    ("Free-Range Eggs", "groceries/eggs", "5.49", 120),
+                    ("Fresh Fish Steak", "groceries/fish-steak", "14.99", 25),
+                    ("Organic Honey Jar", "groceries/honey-jar", "8.99", 70),
+                    ("Strawberries", "groceries/strawberry", "3.99", 90),
+                    ("Nescafe Coffee", "groceries/nescafe-coffee", "9.99", 55),
+                    ("Fresh Juice", "groceries/juice", "3.49", 100),
                 ],
             },
             "Sephora": {
                 "logo_url": LOGOS["catalog"],
                 "products": [
-                    ("Essence Mascara Lash Princess", "beauty/essence-mascara-lash-princess", 85),
-                    ("Eyeshadow Palette with Mirror", "beauty/eyeshadow-palette-with-mirror", 40),
-                    ("Red Lipstick", "beauty/red-lipstick", 75),
-                    ("Calvin Klein CK One", "fragrances/calvin-klein-ck-one", 30),
-                    ("Chanel Coco Noir Eau de Parfum", "fragrances/chanel-coco-noir-eau-de", 12),
-                    ("Dior J'adore", "fragrances/dior-j'adore", 0),  # out of stock on purpose
+                    ("Essence Mascara Lash Princess", "beauty/essence-mascara-lash-princess", "9.99", 85),
+                    ("Eyeshadow Palette with Mirror", "beauty/eyeshadow-palette-with-mirror", "24.99", 40),
+                    ("Red Lipstick", "beauty/red-lipstick", "19.99", 75),
+                    ("Calvin Klein CK One", "fragrances/calvin-klein-ck-one", "59.99", 30),
+                    ("Chanel Coco Noir Eau de Parfum", "fragrances/chanel-coco-noir-eau-de", "129.99", 12),
+                    ("Dior J'adore", "fragrances/dior-j'adore", "119.00", 0),  # out of stock on purpose
                 ],
             },
         },
@@ -127,23 +127,23 @@ MERCHANTS = {
             "IKEA": {
                 "logo_url": LOGOS["luminary"],
                 "products": [
-                    ("Bedside Table (African Cherry)", "furniture/bedside-table-african-cherry", 18),
-                    ("Executive Conference Chair", "furniture/knoll-saarinen-executive-conference-chair", 9),
-                    ("Table Lamp", "home-decoration/table-lamp", 64),
-                    ("Plant Pot", "home-decoration/plant-pot", 90),
-                    ("Family Tree Photo Frame", "home-decoration/family-tree-photo-frame", 52),
-                    ("Spice Rack", "kitchen-accessories/spice-rack", 38),
+                    ("Bedside Table (African Cherry)", "furniture/bedside-table-african-cherry", "79.00", 18),
+                    ("Executive Conference Chair", "furniture/knoll-saarinen-executive-conference-chair", "249.00", 9),
+                    ("Table Lamp", "home-decoration/table-lamp", "24.99", 64),
+                    ("Plant Pot", "home-decoration/plant-pot", "12.99", 90),
+                    ("Family Tree Photo Frame", "home-decoration/family-tree-photo-frame", "17.99", 52),
+                    ("Spice Rack", "kitchen-accessories/spice-rack", "21.50", 38),
                 ],
             },
             "Foot Locker": {
                 "logo_url": LOGOS["capsule"],
                 "products": [
-                    ("Nike Air Jordan 1 Red and Black", "mens-shoes/nike-air-jordan-1-red-and-black", 30),
-                    ("Nike Baseball Cleats", "mens-shoes/nike-baseball-cleats", 22),
-                    ("Puma Future Rider Trainers", "mens-shoes/puma-future-rider-trainers", 26),
-                    ("Sports Sneakers Off White Red", "mens-shoes/sports-sneakers-off-white-red", 0),  # out of stock on purpose
-                    ("Men's Check Shirt", "mens-shirts/men-check-shirt", 48),
-                    ("Men's Plaid Shirt", "mens-shirts/man-plaid-shirt", 35),
+                    ("Nike Air Jordan 1 Red and Black", "mens-shoes/nike-air-jordan-1-red-and-black", "179.99", 30),
+                    ("Nike Baseball Cleats", "mens-shoes/nike-baseball-cleats", "89.99", 22),
+                    ("Puma Future Rider Trainers", "mens-shoes/puma-future-rider-trainers", "84.99", 26),
+                    ("Sports Sneakers Off White Red", "mens-shoes/sports-sneakers-off-white-red", "99.00", 0),  # out of stock on purpose
+                    ("Men's Check Shirt", "mens-shirts/men-check-shirt", "34.99", 48),
+                    ("Men's Plaid Shirt", "mens-shirts/man-plaid-shirt", "39.99", 35),
                 ],
             },
         },
@@ -184,11 +184,11 @@ def create_stores(owner: User, stores: dict) -> None:
             owner_user=owner,
             defaults={"logo_url": store_data["logo_url"]},
         )
-        for name, image_path, quantity in store_data["products"]:
+        for name, image_path, price, quantity in store_data["products"]:
             Product.objects.update_or_create(
                 store=store,
                 name=name,
-                defaults={"image_url": img(image_path), "quantity": quantity},
+                defaults={"image_url": img(image_path), "price": price, "quantity": quantity},
             )
         print(f"  store '{store_name}' ({store.id}) with {len(store_data['products'])} products")
 

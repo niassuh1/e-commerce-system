@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 import uuid
 
@@ -12,6 +13,7 @@ class Product(models.Model):
         related_name='products',
         db_index=True
     )
+    price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     quantity = models.PositiveIntegerField(default=0)
 
     def __str__(self):
