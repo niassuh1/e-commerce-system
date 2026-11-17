@@ -37,7 +37,7 @@ def _is_buyer(order: Order, user) -> bool:
 
 def _get_order(order_id) -> Order:
     return get_object_or_404(
-        Order.objects.select_related('store', 'buyer_store').prefetch_related('items'),
+        Order.objects.select_related('store', 'buyer_store', 'buyer_user').prefetch_related('items'),
         id=order_id,
     )
 
@@ -107,7 +107,7 @@ def list_orders(request: HttpRequest):
  
     orders = Order.objects.filter(
         Q(buyer_user=request.user) | Q(buyer_store__owner_user=request.user)
-    ).prefetch_related('items')
+    ).select_related('store', 'buyer_store', 'buyer_user').prefetch_related('items')
     return Response(OrderListSerializer(orders, many=True).data)
 
 
@@ -119,7 +119,9 @@ def list_store_orders(request: HttpRequest):
     if store.owner_user_id != request.user.id:
         raise PermissionDenied("You don't own this store.")
 
-    orders = Order.objects.filter(store=store).prefetch_related('items')
+    orders = Order.objects.filter(store=store).select_related(
+        'store', 'buyer_store', 'buyer_user'
+    ).prefetch_related('items')
     return Response(OrderListSerializer(orders, many=True).data)
 
 
@@ -146,5 +148,10 @@ def update_order_status(request: HttpRequest, order_id):
     if not (_is_seller(order, request.user) or buyer_may_cancel):
         raise PermissionDenied("You can't set this status on this order.")
 
-    serializer.save()
+    with transaction.atomic():
+        serializer.save()
+        if new_status == OrderStatus.CANCELLED:
+            payload = {"order_id": str(order.id), "store_id": str(order.store_id)}
+            transaction.on_commit(lambda: publish(EventType.ORDER_CANCELLED, payload))
+
     return Response(OrderSerializer(order).data)

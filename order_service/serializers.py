@@ -14,25 +14,41 @@ class OrderItemSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class _OrderPartiesMixin(serializers.Serializer):
+    store_name = serializers.CharField(source='store.name', read_only=True)
+    store_logo_url = serializers.CharField(source='store.logo_url', read_only=True)
+    buyer_store_name = serializers.CharField(source='buyer_store.name', read_only=True, default=None)
+    buyer_username = serializers.CharField(source='buyer_user.username', read_only=True, default=None)
+
+
+class OrderSerializer(_OrderPartiesMixin, serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Order
         fields = [
-            'id', 'buyer_user', 'buyer_store', 'store',
-            'status', 'total', 'items', 'created_at', 'updated_at',
+            'id', 'buyer_user', 'buyer_username', 'buyer_store', 'buyer_store_name',
+            'store', 'store_name', 'store_logo_url',
+            'status', 'cancel_reason', 'total', 'items', 'created_at', 'updated_at',
         ]
         read_only_fields = fields
 
 
-class OrderListSerializer(serializers.ModelSerializer):
-    item_count = serializers.IntegerField(source='items.count', read_only=True)
+class OrderListSerializer(_OrderPartiesMixin, serializers.ModelSerializer):
+    item_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'buyer_user', 'buyer_store', 'store', 'status', 'total', 'item_count', 'created_at']
+        fields = [
+            'id', 'buyer_user', 'buyer_username', 'buyer_store', 'buyer_store_name',
+            'store', 'store_name', 'store_logo_url',
+            'status', 'cancel_reason', 'total', 'item_count', 'created_at', 'updated_at',
+        ]
         read_only_fields = fields
+
+    def get_item_count(self, order) -> int:
+        # Uses the prefetched items instead of one COUNT query per order
+        return sum(item.quantity for item in order.items.all())
 
 
 class CheckoutSerializer(serializers.Serializer):
@@ -61,3 +77,11 @@ class OrderStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['status']
+
+    def validate_status(self, new_status):
+        order = self.instance
+        if new_status == order.status:
+            raise serializers.ValidationError(f"The order is already {order.status}.")
+        if not order.can_transition_to(new_status):
+            raise serializers.ValidationError(f"An order can't go from {order.status} to {new_status}.")
+        return new_status

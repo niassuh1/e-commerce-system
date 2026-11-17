@@ -61,7 +61,7 @@ SERVICES: dict[str, Service] = {
     "auth": Service(settings="app.settings_auth_service", port=port("AUTH_SERVICE_PORT", 8001)),
     "product": Service(settings="app.settings_product_service", port=port("PRODUCT_SERVICE_PORT", 8002), workers=("consume_events",)),
     "cart": Service(settings="app.settings_cart_service", port=port("CART_SERVICE_PORT", 8003)),
-    "order": Service(settings="app.settings_order_service", port=port("ORDER_SERVICE_PORT", 8004)),
+    "order": Service(settings="app.settings_order_service", port=port("ORDER_SERVICE_PORT", 8004), workers=("consume_events",)),
 }
 # ---------------------------------------------------------------------------
 

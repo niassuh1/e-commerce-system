@@ -13,6 +13,16 @@ class OrderStatus(models.TextChoices):
     CANCELLED = 'cancelled', 'Cancelled'
 
 
+# Forward-only flow. Cancelling is allowed until the order ships.
+ALLOWED_TRANSITIONS = {
+    OrderStatus.PENDING: {OrderStatus.CONFIRMED, OrderStatus.CANCELLED},
+    OrderStatus.CONFIRMED: {OrderStatus.SHIPPED, OrderStatus.CANCELLED},
+    OrderStatus.SHIPPED: {OrderStatus.DELIVERED},
+    OrderStatus.DELIVERED: set(),
+    OrderStatus.CANCELLED: set(),
+}
+
+
 class Order(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4)
 
@@ -45,6 +55,7 @@ class Order(models.Model):
         default=OrderStatus.PENDING,
     )
     total = models.DecimalField(max_digits=12, decimal_places=2)
+    cancel_reason = models.CharField(max_length=255, blank=True, default='')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -70,6 +81,9 @@ class Order(models.Model):
             models.Index(fields=['buyer_store', '-created_at']),
             models.Index(fields=['store', '-created_at']),
         ]
+
+    def can_transition_to(self, new_status) -> bool:
+        return new_status in ALLOWED_TRANSITIONS[OrderStatus(self.status)]
 
     @property
     def buyer(self):
