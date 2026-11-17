@@ -1,0 +1,4 @@
+django
+pika
+djangorestframework
+psycopg2

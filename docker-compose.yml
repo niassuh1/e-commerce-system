@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:18
+    container_name: e_store_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+     - "5432:5432"
+    volumes:
+      - ./volumes/pgdata:/var/lib/postgresql
+  redis:
+    image: redis
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./volumes/redis-data:/data
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: broker
+    hostname: rabbitmq-node
+    restart: unless-stopped
+    ports:
+      - "5672:5672"   # AMQP protocol port for applications
+      - "15672:15672" # Web management UI port 
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: secretpassword
+    volumes:
+      - ./volumes/rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+volumes:
+  redis-data:
+    driver: local
+  pgdata:
+  rabbitmq_data:
