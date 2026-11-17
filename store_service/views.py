@@ -1,7 +1,10 @@
 from django.http import HttpRequest
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework import status
+from django.contrib.auth.models import User
 
 from .permissions import HasStore
 from .models import Store
@@ -21,3 +24,13 @@ def get_store(request: HttpRequest):
     store = Store.objects.get(id=tenant_id)
     storeItem = StoreSerializer(store)
     return Response(storeItem.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_store(request: HttpRequest):
+    serializer = StoreSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save(owner_user=request.user)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    
