@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework import status
 from django.contrib.auth.models import User
 
+from auth_service.permissions import has_perm
 from .permissions import HasStore
 from .models import Store
 from .serializers import StoreSerializer
@@ -26,7 +27,7 @@ def get_store(request: HttpRequest):
     return Response(storeItem.data)
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, has_perm('store_service.add_store')])
 def create_store(request: HttpRequest):
     serializer = StoreSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)

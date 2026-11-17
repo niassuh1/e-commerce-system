@@ -9,12 +9,13 @@ from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 
+from auth_service.permissions import has_perm
 from .permissions import HasStore
 from .models import Product
 from .serializers import ProductSerializer
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated, HasStore])
+@permission_classes([IsAuthenticated, HasStore, has_perm('product_service.add_product')])
 def create_product(request: HttpRequest):
     serializer = ProductSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)

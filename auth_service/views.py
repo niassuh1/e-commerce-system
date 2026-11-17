@@ -1,11 +1,21 @@
 from django.http import HttpRequest
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import AccessToken
 
-from auth_service.serializers import UserSerializer
+from auth_service.serializers import RegisterSerializer, UserSerializer
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register(request: HttpRequest):
+    serializer = RegisterSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
 # Create your views here.
