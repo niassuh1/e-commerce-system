@@ -18,3 +18,21 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class StockReservation(models.Model):
+    """Stock taken out of a product for one order, so a cancelled order can give it back exactly once."""
+
+    order_id = models.UUIDField(db_index=True)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reservations')
+    quantity = models.PositiveIntegerField()
+    released = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['order_id', 'product'], name='reservation_unique_product_per_order'),
+        ]
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product_id} for order {self.order_id}"
