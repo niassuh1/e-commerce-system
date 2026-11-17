@@ -42,12 +42,12 @@ MERCHANT_PASSWORD = "password123"
 
 LOGO_BASE = "https://cdn.prod.website-files.com/6365d860c7b7a7191055eb8a"
 LOGOS = {
-    "layers": f"{LOGO_BASE}/6987f806523996bf16ec8dff_Layers.svg",
-    "lightspeed": f"{LOGO_BASE}/6987f808a412a0902b3803eb_Lightspeed.svg",
-    "luminary": f"{LOGO_BASE}/6987f8089d40df4648ec1a81_Luminary.svg",
-    "magnolia": f"{LOGO_BASE}/6987f809973894450723ffa1_Magnolia.svg",
-    "catalog": f"{LOGO_BASE}/6987f7f7465b61765c39d70c_Catalog.svg",
-    "capsule": f"{LOGO_BASE}/6987f7f7c4d3002b8b26bd03_Capsule.svg",
+    "boltshift": f"{LOGO_BASE}/6987f7f7eafb5b3982438a1a_Boltshift.svg",
+    "capsule": f"{LOGO_BASE}/6987f7f7c4d3002b8b26bd0c_Capsule.svg",
+    "calescence": f"{LOGO_BASE}/6987f7f78a397a610604d575_Calescence.svg",
+    "chromatools": f"{LOGO_BASE}/6987f7f7973894450723fefe_Chromatools.svg",
+    "catalog": f"{LOGO_BASE}/6987f7f7465b61765c39d712_Catalog.svg",
+    "clandestine": f"{LOGO_BASE}/6987f7f99ab5c37f533b03eb_Clandestine.svg",
 }
 
 
@@ -64,7 +64,7 @@ MERCHANTS = {
         "email": "john@example.com",
         "stores": {
             "Best Buy": {
-                "logo_url": LOGOS["lightspeed"],
+                "logo_url": LOGOS["boltshift"],
                 "products": [
                     ("Apple MacBook Pro 14\" Space Grey", "laptops/apple-macbook-pro-14-inch-space-grey", "1999.00", 14),
                     ("Dell XPS 13 9300 Laptop", "laptops/new-dell-xps-13-9300-laptop", "1299.99", 11),
@@ -76,7 +76,7 @@ MERCHANTS = {
                 ],
             },
             "Dick's Sporting Goods": {
-                "logo_url": LOGOS["magnolia"],
+                "logo_url": LOGOS["capsule"],
                 "products": [
                     ("Spalding Basketball", "sports-accessories/basketball", "29.99", 60),
                     ("Official Football", "sports-accessories/football", "34.99", 45),
@@ -95,7 +95,7 @@ MERCHANTS = {
         "email": "emily@example.com",
         "stores": {
             "Whole Foods Market": {
-                "logo_url": LOGOS["layers"],
+                "logo_url": LOGOS["calescence"],
                 "products": [
                     ("Organic Whole Milk", "groceries/milk", "4.99", 80),
                     ("Free-Range Eggs", "groceries/eggs", "5.49", 120),
@@ -107,7 +107,7 @@ MERCHANTS = {
                 ],
             },
             "Sephora": {
-                "logo_url": LOGOS["catalog"],
+                "logo_url": LOGOS["chromatools"],
                 "products": [
                     ("Essence Mascara Lash Princess", "beauty/essence-mascara-lash-princess", "9.99", 85),
                     ("Eyeshadow Palette with Mirror", "beauty/eyeshadow-palette-with-mirror", "24.99", 40),
@@ -125,7 +125,7 @@ MERCHANTS = {
         "email": "michael@example.com",
         "stores": {
             "IKEA": {
-                "logo_url": LOGOS["luminary"],
+                "logo_url": LOGOS["catalog"],
                 "products": [
                     ("Bedside Table (African Cherry)", "furniture/bedside-table-african-cherry", "79.00", 18),
                     ("Executive Conference Chair", "furniture/knoll-saarinen-executive-conference-chair", "249.00", 9),
@@ -136,7 +136,7 @@ MERCHANTS = {
                 ],
             },
             "Foot Locker": {
-                "logo_url": LOGOS["capsule"],
+                "logo_url": LOGOS["clandestine"],
                 "products": [
                     ("Nike Air Jordan 1 Red and Black", "mens-shoes/nike-air-jordan-1-red-and-black", "179.99", 30),
                     ("Nike Baseball Cleats", "mens-shoes/nike-baseball-cleats", "89.99", 22),

@@ -237,6 +237,7 @@ Store-scoped endpoints (products, cart, checkout, store orders) also need the st
 |---|---|---|
 | GET | `all/` | List all stores |
 | GET | `info/` | Store from `x-store-id` |
+| PATCH | `info/` | Rename the store or change its `logo_url` (owner only) |
 | POST | `create/` | Create a store owned by the caller |
 
 **Product** (`:8002/api/product/v1/`, needs `x-store-id`)
@@ -244,14 +245,19 @@ Store-scoped endpoints (products, cart, checkout, store orders) also need the st
 | Method | Path | Description |
 |---|---|---|
 | GET | `list/` | Products of the store |
-| POST | `create/` | Create a product |
+| POST | `create/` | Create a product (store owner only) |
+| GET | `<product_id>/` | One product |
 | PUT / PATCH | `<product_id>/` | Update a product (store owner only) |
+| DELETE | `<product_id>/` | Delete a product (store owner only) |
 
-**Cart** (`:8003/api/cart/v1/`, needs `x-store-id`)
+**Cart** (`:8003/api/cart/v1/`, needs `x-store-id` except `all/`)
+
+Carts are per store: a user has one cart for each store they add to, and each one checks out as its own order.
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `list/` | Cart items with product details |
+| GET | `all/` | Every non-empty cart the user holds, one per store, with prices and subtotals |
+| GET | `list/` | Cart items with product details, prices, line totals and subtotal |
 | POST | `add/` | Add `{product_id, quantity}` |
 | PATCH | `edit/<product_id>/` | Set `{quantity}` (`0` removes the item) |
 | DELETE | `edit/<product_id>/` | Remove an item |
@@ -265,7 +271,9 @@ Store-scoped endpoints (products, cart, checkout, store orders) also need the st
 | GET | `list/` | Orders you placed |
 | GET | `store/` | Orders received by the store in `x-store-id` (owner only) |
 | GET | `<order_id>/` | One order (buyer or seller) |
-| PATCH | `<order_id>/status/` | Set `{status}`. The seller can set any status; the buyer can only cancel |
+| PATCH | `<order_id>/status/` | Set `{status}`. Orders only move forward: `pending → confirmed → shipped → delivered`. Cancelling is allowed while `pending` or `confirmed`. The seller moves orders forward; the buyer can only cancel. Cancelling publishes `order.cancelled`, which returns any reserved stock |
+
+Order responses include `store_name`, `store_logo_url`, `buyer_username`, `buyer_store_name` and `cancel_reason` so clients don't need extra lookups.
 
 ---
 
@@ -276,12 +284,17 @@ Services communicate through RabbitMQ using the shared `events` app:
 ```
 order service                 RabbitMQ                       product service
 checkout ──► publish("order.created") ──► exchange "events" ──► queue "product_service.events"
-                                                                  └─► reserve_stock(): decrements stock,
-                                                                      or publishes "inventory.rejected"
+                                                                  └─► reserve_stock(): decrements stock and records
+                                                                      a StockReservation, or publishes "inventory.rejected"
+cancel   ──► publish("order.cancelled") ─────────────────────────► release_stock(): returns reserved stock once
+
+product service ──► publish("inventory.rejected") ──► queue "order_service.events"
+                                                       └─► cancel_rejected_order(): pending order → cancelled
 ```
 
 - **Publish:** `from events import publish` then `publish("order.created", {...})`, usually inside `transaction.on_commit(...)`.
-- **Subscribe:** add `<app>/event_handlers.py` and decorate functions with `@subscribe("order.created")`. `python manage.py consume_events` finds them automatically. Its queue is `<SERVICE_NAME>.events`.
+- **Subscribe:** add `<SERVICE_NAME>/event_handlers.py` and decorate functions with `@subscribe("order.created")`. `python manage.py consume_events` loads only that service's own handlers (services install each other's apps for their models, so autodiscovery would run the wrong handlers). Its queue is `<SERVICE_NAME>.events`.
+- **Consumers:** `product` and `order` both run one. `python runserver.py all` starts them; in Docker they are `product-consumer` and `order-consumer`.
 - **Delivery guarantees:**
   - Duplicate deliveries are skipped (the `ProcessedEvent` table).
   - A failing message is retried once, then moved to the dead-letter queue `<queue>.dead`.

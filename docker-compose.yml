@@ -120,6 +120,10 @@ services:
     ports:
       - "${ORDER_SERVICE_PORT:-8004}:8004"
 
+  order-consumer:
+    <<: *app
+    command: ["python", "manage.py", "consume_events", "--settings=app.settings_order_service"]
+
 networks:
   ecommerce:
     name: ecommerce_network
