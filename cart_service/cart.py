@@ -27,4 +27,10 @@ class Cart:
     
     def clear(self):
         self.redis.delete(self.key)
+
+    @staticmethod
+    def store_ids_for_user(user_id) -> list[str]:
+        prefix = f"cart:{user_id}:"
+        redis = get_redis_connection("default")
+        return [key.decode()[len(prefix):] for key in redis.scan_iter(match=f"{prefix}*", count=100)]
             

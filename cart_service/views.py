@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -7,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from product_service.models import Product
+from store_service.models import Store
 
 from .cart import Cart
 from .permissions import HasStore
@@ -24,31 +27,56 @@ def _check_stock(product: Product, quantity: int):
         )
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated, HasStore])
-def get_cart(request: HttpRequest):
-    cart = _get_cart(request)
+def _cart_payload(cart: Cart, store: Store) -> dict:
+    
     items = cart.items()
 
-    products = Product.objects.filter(id__in=items.keys(), store=request._request.store)
+    products = Product.objects.filter(id__in=items.keys(), store=store)
     found = {str(p.id): p for p in products}
 
-    # Drop items whose product no longer exists in this store
     for product_id in items.keys() - found.keys():
         cart.remove(product_id)
 
-    return Response({
-        "items": [
-            {
-                "product_id": product_id,
-                "name": product.name,
-                "image_url": product.image_url,
-                "quantity": items[product_id],
-                "available": product.quantity,
-            }
-            for product_id, product in found.items()
-        ]
-    })
+    lines = [
+        {
+            "product_id": product_id,
+            "name": product.name,
+            "image_url": product.image_url,
+            "price": str(product.price),
+            "quantity": items[product_id],
+            "line_total": str(product.price * items[product_id]),
+            "available": product.quantity,
+        }
+        for product_id, product in sorted(found.items(), key=lambda pair: pair[1].name)
+    ]
+    subtotal = sum((product.price * items[pid] for pid, product in found.items()), Decimal("0"))
+
+    return {
+        "store": {"id": str(store.id), "name": store.name, "logo_url": store.logo_url},
+        "items": lines,
+        "item_count": sum(items[pid] for pid in found),
+        "subtotal": str(subtotal),
+    }
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, HasStore])
+def get_cart(request: HttpRequest):
+    return Response(_cart_payload(_get_cart(request), request._request.store))
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_all_carts(request: HttpRequest):
+    store_ids = Cart.store_ids_for_user(request.user.id)
+    stores = Store.objects.filter(id__in=store_ids).order_by('name')
+
+    carts = []
+    for store in stores:
+        payload = _cart_payload(Cart(request.user.id, store.id), store)
+        if payload["items"]:
+            carts.append(payload)
+    return Response({"carts": carts})
 
 
 @api_view(['POST'])
