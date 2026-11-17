@@ -1,16 +1,20 @@
+from importlib import import_module
+
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.utils.module_loading import autodiscover_modules
 
 from events.consumer import EventConsumer
 from events.registry import subscribed_event_types
 
 
 class Command(BaseCommand):
-    help = "Consume the events this service subscribes to (handlers live in <app>/event_handlers.py)."
+    help = "Consume the events this service subscribes to (handlers live in <SERVICE_NAME>/event_handlers.py)."
 
     def handle(self, *args, **options):
-        autodiscover_modules("event_handlers")
+        try:
+            import_module(f"{settings.SERVICE_NAME}.event_handlers")
+        except ModuleNotFoundError as error:
+            raise CommandError(f"{settings.SERVICE_NAME} has no event_handlers module.") from error
 
         event_types = subscribed_event_types()
         if not event_types:
