@@ -10,23 +10,29 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
-from pathlib import Path
+import os
 from datetime import timedelta
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Values from .env (see .env.example). Defaults match docker-compose.yml.
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@7k6tw@7*9p9mvf+fz7z^y0ns(kaktowf^07z9!jvss6q$e#t%'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-@7k6tw@7*9p9mvf+fz7z^y0ns(kaktowf^07z9!jvss6q$e#t%')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [host for host in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if host]
 
 
 # Application definition
@@ -79,11 +85,11 @@ WSGI_APPLICATION = 'app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',  # The name of your PostgreSQL database
-        'USER': 'postgres',  # Your PostgreSQL username
-        'PASSWORD': 'password',   # Your PostgreSQL password
-        'HOST': 'localhost',           # Or use '127.0.0.1'
-        'PORT': '5432',                # The default PostgreSQL port
+        'NAME': os.getenv('POSTGRES_DB', 'postgres'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'password'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
 
@@ -153,7 +159,7 @@ SIMPLE_JWT = {
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:16379',
+        'LOCATION': f"redis://{os.getenv('REDIS_HOST', '127.0.0.1')}:{os.getenv('REDIS_PORT', '16379')}",
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'SOCKET_CONNECT_TIMEOUT': 5,
@@ -171,9 +177,9 @@ CACHES = {
 CART_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 days
 
 RABBITMQ = {
-    "HOST": "localhost",
-    "PORT": 5672,
-    "USER": "admin",
-    "PASSWORD": "secretpassword",
+    "HOST": os.getenv("RABBITMQ_HOST", "localhost"),
+    "PORT": int(os.getenv("RABBITMQ_PORT", "5672")),
+    "USER": os.getenv("RABBITMQ_USER", "admin"),
+    "PASSWORD": os.getenv("RABBITMQ_PASSWORD", "secretpassword"),
 }
-EVENTS_EXCHANGE = "events"
+EVENTS_EXCHANGE = os.getenv("EVENTS_EXCHANGE", "events")

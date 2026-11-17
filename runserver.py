@@ -12,6 +12,8 @@ Usage:
     python runserver.py user shell               # interactive commands work too
     python runserver.py store runserver --noreload
     python runserver.py --list                   # show registered services
+    python runserver.py migrate                  # project-wide: migrates every service (shared DB)
+    python runserver.py makemigrations           # project-wide: all apps at once
 
 Arguments are: <service...> [command] [command args...]
 The first argument that is not a registered service name is the manage.py command;
@@ -31,28 +33,44 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
+HOST = os.getenv("SERVICE_HOST", "127.0.0.1")
+
+
+def port(env_name: str, default: int) -> int:
+    return int(os.getenv(env_name, default))
+
 
 @dataclass(frozen=True)
 class Service:
     settings: str        # Django settings module passed via --settings
     port: int            # port used by runserver
-    host: str = "127.0.0.1"
+    host: str = HOST
     workers: tuple[str, ...] = ()  # manage.py commands started alongside runserver
 
 
 # ---------------------------------------------------------------------------
 # Service registry. Add a line here to register a new service.
+# Ports come from .env (see .env.example).
 # ---------------------------------------------------------------------------
 SERVICES: dict[str, Service] = {
-    "store": Service(settings="app.settings_store_service", port=8000), # Equivalent to  python manage.py runserver 8000 --settings=app.settings_store_service
-    "auth": Service(settings="app.settings_auth_service", port=8001),
-    "product": Service(settings="app.settings_product_service", port=8002, workers=("consume_events",)),
-    "cart": Service(settings="app.settings_cart_service", port=8003),
-    "order": Service(settings="app.settings_order_service", port=8004),
+    "store": Service(settings="app.settings_store_service", port=port("STORE_SERVICE_PORT", 8000)), # Equivalent to  python manage.py runserver 8000 --settings=app.settings_store_service
+    "auth": Service(settings="app.settings_auth_service", port=port("AUTH_SERVICE_PORT", 8001)),
+    "product": Service(settings="app.settings_product_service", port=port("PRODUCT_SERVICE_PORT", 8002), workers=("consume_events",)),
+    "cart": Service(settings="app.settings_cart_service", port=port("CART_SERVICE_PORT", 8003)),
+    "order": Service(settings="app.settings_order_service", port=port("ORDER_SERVICE_PORT", 8004)),
 }
 # ---------------------------------------------------------------------------
 
 DEFAULT_COMMAND = "runserver"
+
+# All services share one database, so these run once with every app installed
+PROJECT_SETTINGS = "app.settings_all_services"
+PROJECT_COMMANDS = {"migrate", "makemigrations", "showmigrations", "createsuperuser"}
+
 BASE_DIR = Path(__file__).resolve().parent
 MANAGE_PY = BASE_DIR / "manage.py"
 
@@ -240,6 +258,17 @@ def run_parallel(names: list[str], command: list[str]) -> int:
     return 0
 
 
+def run_project_command(command: list[str]) -> int:
+    print(f"==> manage.py {' '.join(command)}  ({PROJECT_SETTINGS})")
+    try:
+        return subprocess.call(
+            [sys.executable, str(MANAGE_PY), *command, f"--settings={PROJECT_SETTINGS}"],
+            cwd=BASE_DIR,
+        )
+    except KeyboardInterrupt:
+        return 130
+
+
 def main(argv: list[str]) -> int:
     if argv and argv[0] in ("-h", "--help"):
         print(__doc__)
@@ -247,6 +276,8 @@ def main(argv: list[str]) -> int:
     if argv and argv[0] in ("-l", "--list"):
         print_services()
         return 0
+    if argv and argv[0] in PROJECT_COMMANDS:
+        return run_project_command(argv)
 
     try:
         names, command = parse_args(argv) if argv else prompt_interactive()

@@ -5,3 +5,4 @@ djangorestframework-simplejwt
 psycopg2
 redis
 django-redis
+python-dotenv

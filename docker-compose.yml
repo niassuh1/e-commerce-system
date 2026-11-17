@@ -1,43 +1,125 @@
+name: ecommerce
+
+
+x-app: &app
+  build: .
+  image: ecommerce-app
+  restart: unless-stopped
+  env_file: .env
+  networks:
+    - ecommerce
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+
 services:
+  # --- Infrastructure --------------------------------------------------------
   db:
     image: postgres:18
     container_name: e_store_db
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
     ports:
-     - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - ./volumes/pgdata:/var/lib/postgresql
+    networks:
+      - ecommerce
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis
     container_name: redis
     restart: unless-stopped
     ports:
-      - "16379:6379"
+      - "${REDIS_HOST_PORT:-16379}:6379"
     volumes:
       - ./volumes/redis-data:/data
+    networks:
+      - ecommerce
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   rabbitmq:
     image: rabbitmq:4-management
     container_name: broker
     hostname: rabbitmq-node
     restart: unless-stopped
     ports:
-      - "5672:5672"   # AMQP protocol port for applications
-      - "15672:15672" # Web management UI port 
+      - "${RABBITMQ_HOST_PORT:-5672}:5672"   # AMQP protocol port for applications
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672" # Web management UI port
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: secretpassword
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-secretpassword}
     volumes:
       - ./volumes/rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ecommerce
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 30s
+      interval: 10s
       timeout: 10s
-      retries: 5
-volumes:
-  redis-data:
-    driver: local
-  pgdata:
-  rabbitmq_data:
+      retries: 10
+      start_period: 20s
+
+  # --- One-off: create/update the database tables ------------------------------
+  migrate:
+    <<: *app
+    restart: "no"
+    command: ["python", "runserver.py", "migrate", "--noinput"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # --- Services (container port is fixed, host port comes from .env) ----------
+  store:
+    <<: *app
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000", "--noreload", "--settings=app.settings_store_service"]
+    ports:
+      - "${STORE_SERVICE_PORT:-8000}:8000"
+
+  auth:
+    <<: *app
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8001", "--noreload", "--settings=app.settings_auth_service"]
+    ports:
+      - "${AUTH_SERVICE_PORT:-8001}:8001"
+
+  product:
+    <<: *app
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8002", "--noreload", "--settings=app.settings_product_service"]
+    ports:
+      - "${PRODUCT_SERVICE_PORT:-8002}:8002"
+
+  product-consumer:
+    <<: *app
+    command: ["python", "manage.py", "consume_events", "--settings=app.settings_product_service"]
+
+  cart:
+    <<: *app
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8003", "--noreload", "--settings=app.settings_cart_service"]
+    ports:
+      - "${CART_SERVICE_PORT:-8003}:8003"
+
+  order:
+    <<: *app
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8004", "--noreload", "--settings=app.settings_order_service"]
+    ports:
+      - "${ORDER_SERVICE_PORT:-8004}:8004"
+
+networks:
+  ecommerce:
+    name: ecommerce_network
