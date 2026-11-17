@@ -20,6 +20,8 @@ everything after it is passed through unchanged. Default command: runserver.
 Registering a new service:
     Add one entry to SERVICES below:
         "<name>": Service(settings="app.settings_<name>_service", port=<port>),
+    Background commands (e.g. event consumers) that should start with runserver:
+        "<name>": Service(..., workers=("consume_events",)),
 """
 import os
 import signal
@@ -35,6 +37,7 @@ class Service:
     settings: str        # Django settings module passed via --settings
     port: int            # port used by runserver
     host: str = "127.0.0.1"
+    workers: tuple[str, ...] = ()  # manage.py commands started alongside runserver
 
 
 # ---------------------------------------------------------------------------
@@ -43,8 +46,9 @@ class Service:
 SERVICES: dict[str, Service] = {
     "store": Service(settings="app.settings_store_service", port=8000), # Equivalent to  python manage.py runserver 8000 --settings=app.settings_store_service
     "auth": Service(settings="app.settings_auth_service", port=8001),
-    "product": Service(settings="app.settings_product_service", port=8002),
+    "product": Service(settings="app.settings_product_service", port=8002, workers=("consume_events",)),
     "cart": Service(settings="app.settings_cart_service", port=8003),
+    "order": Service(settings="app.settings_order_service", port=8004),
 }
 # ---------------------------------------------------------------------------
 
@@ -190,23 +194,31 @@ def run_parallel(names: list[str], command: list[str]) -> int:
             return 2
         seen[(svc.host, svc.port)] = name
 
+    # Each job is (label, command): the servers, plus their background workers
+    jobs: list[tuple[str, list[str], str]] = []
+    for name in names:
+        svc = SERVICES[name]
+        jobs.append((name, build_command(svc, command), f"http://{svc.host}:{svc.port}  ({svc.settings})"))
+        if command[0] == "runserver":
+            for worker in svc.workers:
+                jobs.append((f"{name}:{worker}", build_command(svc, [worker]), f"{worker}  ({svc.settings})"))
+
     env = {**os.environ, "PYTHONUNBUFFERED": "1"}
-    width = max(len(n) for n in names)
+    width = max(len(label) for label, _, _ in jobs)
     procs: list[subprocess.Popen] = []
     threads: list[threading.Thread] = []
 
-    for i, name in enumerate(names):
-        svc = SERVICES[name]
+    for i, (label, cmd, description) in enumerate(jobs):
         color = COLORS[i % len(COLORS)]
-        print(f"{color}==> [{name}] http://{svc.host}:{svc.port}  ({svc.settings}){RESET}")
+        print(f"{color}==> [{label}] {description}{RESET}")
         proc = subprocess.Popen(
-            build_command(svc, command),
+            cmd,
             cwd=BASE_DIR, env=env, text=True, bufsize=1,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             start_new_session=(os.name != "nt"),
         )
         procs.append(proc)
-        t = threading.Thread(target=stream_output, args=(name, color, proc, width), daemon=True)
+        t = threading.Thread(target=stream_output, args=(label, color, proc, width), daemon=True)
         t.start()
         threads.append(t)
     print()
@@ -245,7 +257,8 @@ def main(argv: list[str]) -> int:
         print()
         return 0
 
-    if command[0] == "runserver" and len(names) > 1:
+    has_workers = any(SERVICES[n].workers for n in names)
+    if command[0] == "runserver" and (len(names) > 1 or has_workers):
         return run_parallel(names, command)
     if len(names) == 1:
         return run_foreground(names[0], command)

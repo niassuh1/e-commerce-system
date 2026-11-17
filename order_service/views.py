@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -8,9 +11,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from cart_service.cart import Cart
+from events.event_types import EventType
+from events.publisher import publish
+from product_service.models import Product
 from store_service.permissions import HasStore
 
-from .models import Order, OrderStatus
+from .models import Order, OrderItem, OrderStatus
 from .serializers import (
     CheckoutSerializer,
     OrderListSerializer,
@@ -36,19 +42,63 @@ def _get_order(order_id) -> Order:
     )
 
 
+def _check_cart_is_available(cart_items: dict[str, int], products: dict[str, Product]) -> None:
+    """Quick feedback for the buyer. The real stock change happens when order.created is consumed."""
+    errors = []
+    for product_id, quantity in cart_items.items():
+        product = products.get(product_id)
+        if product is None:
+            errors.append(f"Product {product_id} is no longer available.")
+        elif quantity > product.quantity:
+            errors.append(f"Only {product.quantity} of '{product.name}' available.")
+    if errors:
+        raise ValidationError({'items': errors})
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, HasStore])
 def checkout(request: HttpRequest):
-
     store = request._request.store
     serializer = CheckoutSerializer(data=request.data, context={'request': request, 'store': store})
     serializer.is_valid(raise_exception=True)
+    buyer_store = serializer.validated_data['buyer_store']
 
-    if not Cart(request.user.id, store.id).items():
+    cart = Cart(request.user.id, store.id)
+    cart_items = cart.items()
+    if not cart_items:
         raise ValidationError({'cart': 'Your cart is empty.'})
 
-    # TODO: Publish order.created from rabbitmq, and listen to it in the products service to handle inventory
-    return Response({'detail': 'Order received.'}, status=status.HTTP_202_ACCEPTED)
+    products = {str(p.id): p for p in Product.objects.filter(id__in=cart_items.keys(), store=store)}
+    _check_cart_is_available(cart_items, products)
+
+    with transaction.atomic():
+        order = Order.objects.create(
+            buyer_user=None if buyer_store else request.user,
+            buyer_store=buyer_store,
+            store=store,
+            total=sum((products[pid].price * quantity for pid, quantity in cart_items.items()), Decimal('0')),
+        )
+        OrderItem.objects.bulk_create(
+            OrderItem(
+                order=order,
+                product=products[pid],
+                product_name=products[pid].name,
+                image_url=products[pid].image_url,
+                unit_price=products[pid].price,
+                quantity=quantity,
+            )
+            for pid, quantity in cart_items.items()
+        )
+
+        transaction.on_commit(cart.clear)
+
+    payload = {
+        "order_id": str(order.id),
+        "store_id": str(order.store_id),
+        "items": [{"product_id": str(i.product_id), "quantity": i.quantity} for i in order.items.all()],
+    }
+    transaction.on_commit(lambda: publish(EventType.ORDER_CREATED, payload))
+    return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['GET'])

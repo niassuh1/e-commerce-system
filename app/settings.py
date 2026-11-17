@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework_simplejwt'
+    'rest_framework_simplejwt',
+    "events"
 ]
 
 MIDDLEWARE = [
@@ -168,3 +169,11 @@ CACHES = {
 }
 
 CART_TTL_SECONDS = 60 * 60 * 24 * 7  # 7 days
+
+RABBITMQ = {
+    "HOST": "localhost",
+    "PORT": 5672,
+    "USER": "admin",
+    "PASSWORD": "secretpassword",
+}
+EVENTS_EXCHANGE = "events"
