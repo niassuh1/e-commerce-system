@@ -10,6 +10,7 @@ class Product(models.Model):
         'store_service.Store',
         on_delete=models.CASCADE,
         related_name='products',
+        db_index=True
     )
     quantity = models.PositiveIntegerField(default=0)
 

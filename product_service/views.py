@@ -37,3 +37,10 @@ def update_product(request: HttpRequest, product_id):
     serializer.save()
     return Response(serializer.data)
 
+@api_view(['GET'])
+@permission_classes([HasStore])
+def list_products(request: HttpRequest):
+    store = request._request.store
+    
+    products = Product.objects.filter(store=store)
+    return Response(ProductSerializer(products, many=True).data)
