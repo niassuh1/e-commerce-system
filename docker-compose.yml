@@ -6,6 +6,8 @@ x-app: &app
   image: ecommerce-app
   restart: unless-stopped
   env_file: .env
+  environment:
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,store,auth,product,cart,order}
   networks:
     - ecommerce
   depends_on:
@@ -72,11 +74,12 @@ services:
       retries: 10
       start_period: 20s
 
-  # --- One-off: create/update the database tables ------------------------------
+  # --- One-off: create/update the database tables, then load the dummy data ----
+  # seed.py is idempotent (update_or_create), so it is safe on every `docker compose up`.
   migrate:
     <<: *app
     restart: "no"
-    command: ["python", "runserver.py", "migrate", "--noinput"]
+    command: ["sh", "-c", "python runserver.py migrate --noinput && python seed.py"]
     depends_on:
       db:
         condition: service_healthy
