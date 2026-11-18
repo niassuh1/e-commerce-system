@@ -1,0 +1,152 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-17T21:59:55.395Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-17T21:59:55.604Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "skipped-heading",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-17T21:59:55.811Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-11-17T21:59:56.003Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-17T21:59:56.211Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-17T21:59:56.408Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "skipped-heading",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-17T21:59:56.603Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-11-17T21:59:56.800Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-transit.html"
+        ],
+        "createdAt": "2026-11-17T21:59:56.995Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-transit.html"
+        ],
+        "createdAt": "2026-11-17T21:59:57.195Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "skipped-heading",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-transit.html"
+        ],
+        "createdAt": "2026-11-17T21:59:57.395Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-transit.html"
+        ],
+        "createdAt": "2026-11-17T21:59:57.599Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-17T21:59:57.814Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-17T21:59:58.042Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "skipped-heading",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-17T21:59:58.272Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-17T21:59:58.505Z",
+        "reason": "agent: throwaway decision-round sketch of a direction the user rejected; never shipped"
+      }
+    ]
+  }
+}

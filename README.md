@@ -1,9 +1,10 @@
-# E Commerce Backend
+# E Commerce
 
-A small e-commerce backend built with Django and Django REST Framework, split into services:
+A small multi-store e-commerce app: a Django REST backend split into services, plus a TanStack Start frontend (in `frontend/`).
 
 | Service | Port | Base path | What it does |
 |---|---|---|---|
+| frontend | 3003 | `/` | Web app (TanStack Start). Its server calls the services below; the browser never does |
 | store | 8000 | `/api/store/v1/` | Stores and their owners |
 | auth | 8001 | `/api/auth/v1/` | Registration, JWT tokens, current user |
 | product | 8002 | `/api/product/v1/` | Products per store. Its event consumer updates stock |
@@ -20,7 +21,26 @@ Infrastructure:
 | `redis` | 16379 | 6379 | Carts |
 | `rabbitmq` | 5672 (AMQP), 15672 (management UI) | 5672 | Events between services |
 
-There are two ways to run the project:
+## Quick start
+
+Pick one. Both are single commands (run them from the project root, with Git Bash on Windows):
+
+| I want to… | Run | Needs |
+|---|---|---|
+| **Run everything in Docker** | `bash scripts/docker.sh` | Docker |
+| **Develop**: db, redis and rabbitmq in Docker, backend and frontend on my machine with hot reload | `bash scripts/dev.sh` | Docker, Python 3.13+, Node 22+, pnpm |
+
+Add `--seed` to either one to load the [dummy data](#dummy-data), e.g. `bash scripts/docker.sh start --seed`.
+
+When it's up, open the frontend at **http://localhost:3003** and sign in with `john` / `password123` (after seeding).
+
+| Script | What it does |
+|---|---|
+| `scripts/docker.sh [start]` | Creates `.env` if missing, then builds and starts every container |
+| `scripts/docker.sh stop` / `logs [service]` / `seed` | Stops the stack, follows logs, loads dummy data |
+| `scripts/dev.sh` | Starts db, redis and rabbitmq in Docker, installs dependencies, migrates, then runs the five services, both event consumers and `pnpm dev` together. `Ctrl+C` stops them (the containers keep running; `docker compose down` stops those) |
+
+The scripts wrap the manual steps in the two options below, which explain what happens underneath.
 
 - **[Option A: everything in Docker](#option-a-run-everything-with-docker-recommended)** (recommended). Only Docker is needed.
 - **[Option B: services on your machine](#option-b-run-the-services-on-your-machine)**, with only the infrastructure in Docker. Best while developing (auto-reload).
@@ -29,13 +49,20 @@ There are two ways to run the project:
 
 ## Configuration (`.env`)
 
-Both options start with:
+There are two env files, one per way of running:
+
+| File | Used by | Hosts |
+|---|---|---|
+| `.env` (copy of `.env.example`) | Everything in Docker (`docker.sh`) | Compose service names: `db`, `redis`, `rabbitmq` |
+| `.env.local` (committed) | Backend on your machine (`dev.sh`) | `localhost`, with the ports Docker publishes |
+
+`dev.sh` always uses `.env.local` and never changes `.env`. For the manual steps below, start with:
 
 ```bash
 cp .env.example .env
 ```
 
-Django, `runserver.py` and `docker-compose.yml` all read this file. The defaults are for **Option A**: hosts are the Docker Compose service names (`db`, `redis`, `rabbitmq`), which resolve inside the `ecommerce_network` network.
+Django, `runserver.py` and `docker-compose.yml` all read `.env`. Its defaults are for **Option A**: hosts are the Docker Compose service names (`db`, `redis`, `rabbitmq`), which resolve inside the `ecommerce_network` network.
 
 | Variable | Default | Notes |
 |---|---|---|
@@ -44,6 +71,7 @@ Django, `runserver.py` and `docker-compose.yml` all read this file. The defaults
 | `DJANGO_ALLOWED_HOSTS` | *(empty)* | Comma-separated |
 | `SERVICE_HOST` | `0.0.0.0` | Interface the services bind to |
 | `STORE_SERVICE_PORT` … `ORDER_SERVICE_PORT` | `8000` … `8004` | Service ports, also published on your machine |
+| `FRONTEND_PORT` | `3003` | Port the frontend container is published on |
 | `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | `postgres` / `postgres` / `password` | |
 | `POSTGRES_HOST` / `POSTGRES_PORT` | `db` / `5432` | Where the app connects |
 | `POSTGRES_HOST_PORT` | `5432` | Port published on your machine |
@@ -76,12 +104,13 @@ The defaults work as-is.
 docker compose up -d --build
 ```
 
-This builds one image (`ecommerce-app`, from the `Dockerfile`) and starts, on the `ecommerce_network` network:
+This builds two images, `ecommerce-app` (backend, from the `Dockerfile`) and `ecommerce-frontend` (from `frontend/Dockerfile`), and starts, on the `ecommerce_network` network:
 
 1. `db`, `redis` and `rabbitmq`. The app waits until all three report healthy.
 2. `migrate`, a one-off container that runs `python runserver.py migrate` and exits.
 3. `store`, `auth`, `product`, `cart` and `order`, on ports 8000 to 8004.
-4. `product-consumer`, which consumes `order.created` and updates stock.
+4. `product-consumer` and `order-consumer`, which handle the events between services (stock and order status).
+5. `frontend`, on port 3003.
 
 Check that everything is up:
 
@@ -116,7 +145,9 @@ The services run with `--noreload`, so code changes need a rebuild (`docker comp
 
 ## Option B: Run the services on your machine
 
-**Prerequisites:** Python 3.13+ (developed on 3.15) and Docker with Docker Compose v2.
+`bash scripts/dev.sh` does all of this for you. The manual steps:
+
+**Prerequisites:** Python 3.13+ (developed on 3.15), Node 22+ with pnpm (for the frontend), and Docker with Docker Compose v2.
 
 ### 1. Install dependencies
 
@@ -133,26 +164,21 @@ pip install -r requirements.txt
 
 ### 2. Configure for localhost
 
+Use `.env.local` instead of `.env`. It points the app at `localhost` and the ports Docker publishes (Redis on `16379`, to avoid a clash with a Redis already on 6379). Load it into your shell before running any command below:
+
 ```bash
-cp .env.example .env
+set -a; source .env.local; set +a        # bash / zsh / Git Bash on Windows
+export REDIS_PORT=$REDIS_HOST_PORT       # see the note below
 ```
 
-Then, in `.env`, point the app at the ports Docker publishes on your machine:
+On Windows without a bash shell, copy the file over `.env` instead (`copy .env.local .env`), and restore the Docker defaults later with `copy .env.example .env`.
 
-```dotenv
-SERVICE_HOST=127.0.0.1
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-REDIS_HOST=127.0.0.1
-REDIS_PORT=16379
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
-```
+> The ports in `.env.local` must be the **published** ones: `POSTGRES_PORT`, `REDIS_PORT` and `RABBITMQ_PORT` equal their `*_HOST_PORT` counterparts. `dev.sh` enforces this itself.
 
 ### 3. Start only the infrastructure
 
 ```bash
-docker compose up -d db redis rabbitmq
+docker compose --env-file .env.local up -d db redis rabbitmq
 ```
 
 Wait until all three are healthy (`docker compose ps`).
@@ -192,6 +218,25 @@ python runserver.py --list                 # services and ports
 
 > The consumer does not auto-reload. Restart it after changing an event handler.
 
+### 7. Run the frontend
+
+```bash
+cd frontend
+pnpm install
+pnpm dev          # http://localhost:3003
+```
+
+---
+
+## Frontend
+
+`frontend/` is a bilingual (English / Arabic) storefront and merchant dashboard built with TanStack Start. See [frontend/README.md](frontend/README.md) for its structure.
+
+- **Talks to Django from its server only.** Browser requests go to TanStack Start server functions, which call the services and keep the JWT in httpOnly cookies, so the backend needs no CORS setup.
+- **Service URLs** are read from server-side env vars (`DJANGO_STORE_URL`, `DJANGO_AUTH_URL`, `DJANGO_PRODUCT_URL`, `DJANGO_CART_URL`, `DJANGO_ORDER_URL`). They default to `http://127.0.0.1:<port>/api/<service>/v1`, which is right for `pnpm dev`. `docker-compose.yml` sets them to the container names (`http://store:8000/...`).
+- **In Docker** the frontend is built with `frontend/Dockerfile` (a multi-stage build that serves the compiled Nitro server on port 3003).
+- **Login cookies are `Secure` in the Docker build** (it runs in production mode). Chrome and Firefox accept them on `http://localhost`; Safari doesn't, so use `pnpm dev` there.
+
 ---
 
 ## Dummy data
@@ -203,6 +248,16 @@ python runserver.py --list                 # services and ports
 - **Six stores** (Best Buy, Dick's Sporting Goods, Whole Foods Market, Sephora, IKEA, Foot Locker), each with priced products and stock.
 
 The script is safe to run more than once. It's for local development only.
+
+**It works the same way however you started the app.** All of these fill the same database:
+
+```bash
+python seed.py                              # on your machine (uses .env.local: localhost + published ports)
+bash scripts/docker.sh seed                 # inside the running Docker stack
+docker compose exec store python seed.py    # same, without the script
+```
+
+`seed.py` detects whether it runs on your machine or in a container and picks the right hosts. Variables already set in your shell always win. It also runs the migrations first, so it works on a brand-new database. Re-running it resets the seeded products' prices and stock to their seed values.
 
 ---
 
@@ -309,10 +364,13 @@ product service ──► publish("inventory.rejected") ──► queue "order_s
 | Problem | Fix |
 |---|---|
 | `relation "..." does not exist` | Option A: `docker compose run --rm migrate`. Option B: `python runserver.py migrate` |
-| `could not translate host name "db"` (Option B) | Your `.env` still has the Docker hostnames. Use the localhost values from Option B, step 2 |
+| `could not translate host name "db"` (Option B) | The backend is using `.env` (Docker hostnames). Use `.env.local` as in Option B, step 2, or run `bash scripts/dev.sh` |
+| `docker.sh` says `.env has POSTGRES_HOST=localhost` | `.env` holds the localhost values. Restore the Docker defaults with `cp .env.example .env` |
+| Frontend: login works but you're signed out on the next page (Docker, Safari) | The Docker build sets `Secure` cookies, which Safari won't store on `http://localhost`. Use `pnpm dev` |
+| Frontend shows errors / empty pages | The services must all be up, including both event consumers. Check `docker compose ps` or the `dev.sh` output |
 | `Conflict. The container name "/e_store_db" is already in use` | An older compose project owns these containers. Remove it with `docker rm -f e_store_db redis broker` (data in `./volumes` is kept), then run `docker compose up -d` again |
 | Port already allocated | Something on your machine uses that port. Change the matching `*_PORT` / `*_HOST_PORT` in `.env` |
 | Consumer: `ACCESS_REFUSED` / login failed | Check that `RABBITMQ_USER` and `RABBITMQ_PASSWORD` in `.env` match the broker. See the volume note under [Configuration](#configuration-env) |
-| Cart is always empty / Redis has no keys | Another Redis may be listening locally. Docker publishes Redis on `16379` to avoid that. In Option B, make sure `REDIS_PORT=16379` |
+| Cart is always empty / Redis has no keys | Another Redis may be listening locally on 6379. Docker publishes Redis on `16379` to avoid that. When running the backend on your machine, the app must connect to `16379` (`dev.sh` does this automatically) |
 | `ModuleNotFoundError: No module named 'django'` | Option B: activate the virtual environment first |
 | A message ended up in `<queue>.dead` | Fix the cause, then move it back to the `events` exchange from the management UI |

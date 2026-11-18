@@ -1,0 +1,164 @@
+@import '@fontsource-variable/readex-pro';
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@import 'tw-animate-css';
+
+/*
+ * Horizon: a quiet, image-first boutique (pinned by the user's reference).
+ * Soft grey canvas, one white sheet, near-black ink, pill-shaped controls.
+ * Product photography carries the colour. One bilingual family (Readex Pro).
+ */
+
+:root {
+  --canvas: #ececef;
+  --sheet: #ffffff;
+  --tile: #f4f4f6;
+  --pill: #f2f2f4;
+
+  --success: #1f7a4d;
+  --warning: #9a5b00;
+
+  --background: #ffffff;
+  --foreground: #111113;
+  --card: #ffffff;
+  --card-foreground: #111113;
+  --popover: #ffffff;
+  --popover-foreground: #111113;
+  --primary: #111113;
+  --primary-foreground: #ffffff;
+  --secondary: #f2f2f4;
+  --secondary-foreground: #111113;
+  --muted: #f4f4f6;
+  --muted-foreground: #6b6b73;
+  --accent: #ececef;
+  --accent-foreground: #111113;
+  --destructive: #d92d3a;
+  --destructive-foreground: #ffffff;
+  --border: #e6e6ea;
+  --input: #dedee4;
+  --ring: #111113;
+  --radius: 1rem;
+}
+
+@theme inline {
+  --font-sans: 'Readex Pro Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-canvas: var(--canvas);
+  --color-sheet: var(--sheet);
+  --color-tile: var(--tile);
+  --color-pill: var(--pill);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-color: #c9c9cf transparent;
+  }
+
+  body {
+    @apply bg-canvas text-foreground antialiased;
+    font-family: var(--font-sans);
+    caret-color: var(--foreground);
+  }
+
+  ::selection {
+    background: #dcdce2;
+    color: var(--foreground);
+  }
+
+  /* Arabic needs a touch more line height than Latin at the same size. */
+  :lang(ar) body {
+    line-height: 1.65;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility page-wrap {
+  width: min(1320px, calc(100% - 2rem));
+  margin-inline: auto;
+
+  @media (width >= 40rem) {
+    width: min(1320px, calc(100% - 4rem));
+  }
+}
+
+/* Order stepper: the bar fills to the current step. */
+@keyframes bar-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@utility animate-bar-fill {
+  transform-origin: left center;
+  animation: bar-fill 900ms var(--ease-out-expo) both;
+  &:where([dir='rtl'] *) {
+    transform-origin: right center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}

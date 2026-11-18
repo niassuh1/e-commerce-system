@@ -3,7 +3,14 @@
 Fill the database with dummy data for local development.
 
 Usage (from the project root, with Postgres running):
-    python seed.py
+    python seed.py                                 # on your machine; also works while the stack runs in Docker
+    docker compose exec store python seed.py       # inside a container
+    bash scripts/docker.sh seed                    # same, via the helper script
+
+Where it connects:
+    - inside a container: the settings from .env (Docker hostnames: db, redis, rabbitmq)
+    - on your machine: .env.local, i.e. localhost and the ports Docker publishes
+    Variables already set in your shell win in both cases. Both modes write to the same Postgres.
 
 Safe to run more than once: existing rows are updated instead of duplicated.
 
@@ -20,10 +27,46 @@ untitledui.com/logos and product images are real product photos from DummyJSON
 LOCAL DEVELOPMENT ONLY. Never run this against a real environment.
 """
 import os
+from pathlib import Path
 
-# product_service settings install auth, store_service and product_service,
-# which is everything this script needs.
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings_product_service")
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# Docker service name -> where the same service is reachable from the host machine
+DOCKER_HOSTS = {"POSTGRES_HOST": "db", "REDIS_HOST": "redis", "RABBITMQ_HOST": "rabbitmq"}
+PUBLISHED_PORTS = {
+    "POSTGRES_PORT": ("POSTGRES_HOST_PORT", "5432"),
+    "REDIS_PORT": ("REDIS_HOST_PORT", "16379"),
+    "RABBITMQ_PORT": ("RABBITMQ_HOST_PORT", "5672"),
+}
+
+
+def running_in_container() -> bool:
+    return Path("/.dockerenv").exists() or Path("/run/.containerenv").exists()
+
+
+def configure_environment() -> None:
+    """Point the script at the right services, whether it runs on the host or inside a container."""
+    if running_in_container():
+        return  # the container already got .env (Docker hostnames and in-network ports)
+
+    # On the host the Docker hostnames don't resolve: use .env.local (localhost + published ports).
+    # load_dotenv never overrides variables that are already set, so an exported value always wins.
+    load_dotenv(BASE_DIR / ".env.local")
+    load_dotenv(BASE_DIR / ".env")  # fills in anything .env.local doesn't define
+
+    for name, docker_host in DOCKER_HOSTS.items():
+        if os.environ.get(name, docker_host) == docker_host:
+            os.environ[name] = "localhost"
+    for name, (published, default) in PUBLISHED_PORTS.items():
+        os.environ[name] = os.environ.get(published, default)
+
+
+configure_environment()
+
+# All service apps installed, so a fresh database gets every table, not only the ones seeded here
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings_all_services")
 
 import django
 

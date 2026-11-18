@@ -124,6 +124,28 @@ services:
     <<: *app
     command: ["python", "manage.py", "consume_events", "--settings=app.settings_order_service"]
 
+  # --- Frontend (TanStack Start). Its server calls the Django services over the Docker network ---
+  frontend:
+    build: ./frontend
+    image: ecommerce-frontend
+    restart: unless-stopped
+    environment:
+      DJANGO_STORE_URL: http://store:8000/api/store/v1
+      DJANGO_AUTH_URL: http://auth:8001/api/auth/v1
+      DJANGO_PRODUCT_URL: http://product:8002/api/product/v1
+      DJANGO_CART_URL: http://cart:8003/api/cart/v1
+      DJANGO_ORDER_URL: http://order:8004/api/order/v1
+    ports:
+      - "${FRONTEND_PORT:-3003}:3003"
+    networks:
+      - ecommerce
+    depends_on:
+      - store
+      - auth
+      - product
+      - cart
+      - order
+
 networks:
   ecommerce:
     name: ecommerce_network
